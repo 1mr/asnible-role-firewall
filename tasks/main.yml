@@ -1,0 +1,59 @@
+---
+- name: create directories
+  file: >
+    path={{ item }}
+    state=directory
+  with_items:
+    - /etc/firewall
+    - /etc/firewall/custom
+
+- name: copy config files
+  template: 
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: 'firewall.conf.j2', dest: '/etc/firewall/firewall.conf', mode: '0644' }
+    - { src: 'forwarding.conf.j2', dest: '/etc/firewall/forwarding.conf', mode: '0644' }
+    - { src: 'ssh-new-limit.sh.j2', dest: '/etc/firewall/custom/ssh-new-limit.sh', mode: '0755' }
+  notify:
+    - restart firewall
+
+- name: copy custom scripts files 
+  copy: >
+    src={{ item }}
+    dest=/etc/firewall/custom/{{ item }}
+    mode=0755
+  with_items: "{{ firewall.scripts }}"
+  when: firewall.scripts is defined
+  notify:
+    - restart firewall
+
+- name: configure firewall services
+  template: >
+    src=services.conf.j2
+    dest=/etc/firewall/services.conf
+  when: firewall.services|lower != 'none'
+  notify:
+    - restart firewall
+
+- name: configure firewall whitelist
+  template: >
+    src=ip-whitelist.conf.j2
+    dest=/etc/firewall/ip-whitelist.conf
+  when: firewall.whitelist|lower != 'none'
+  notify:
+    - restart firewall
+
+- name: copy firewall script
+  copy: >
+    src=firewall
+    dest=/etc/init.d/firewall
+    mode=0755
+  notify:
+    - restart firewall
+
+- name: add firewall to autostart
+  service: >
+    name=firewall
+    enabled=yes

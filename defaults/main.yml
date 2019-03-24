@@ -1,0 +1,12 @@
+---
+firewall:
+  services:
+    - name: SSH
+      port:
+        - 22/tcp
+    - name: HTTP
+      port:
+        - 80/tcp
+    - name: HTTPS
+      port:
+        - 443/tcp
